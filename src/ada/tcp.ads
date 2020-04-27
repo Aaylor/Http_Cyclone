@@ -1,67 +1,73 @@
+---------------------------
+-- TCP Types definitions --
+---------------------------
+
+
 with Net_Mem; use Net_Mem;
 with Interfaces.C; use Interfaces.C;
 with Compiler_Port; use Compiler_Port;
+with Ip; use Ip;
+with Error_H; use Error_H;
+with Type_Def; use Type_Def;
+with Tcp_Types; use Tcp_Types;
 
 package Tcp is
 
-   type Tcp_State is 
-     (TCP_STATE_CLOSED,
-      TCP_STATE_LISTEN,
-      TCP_STATE_SYN_SENT,
-      TCP_STATE_SYN_RECEIVED,
-      TCP_STATE_ESTABLISHED,
-      TCP_STATE_CLOSE_WAIT,
-      TCP_STATE_LAST_ACK,
-      TCP_STATE_FIN_WAIT_1,
-      TCP_STATE_FIN_WAIT_2,
-      TCP_STATE_CLOSING,
-      TCP_STATE_TIME_WAIT);
-   
-   type TCP_Congest_State is 
-     (TCP_CONGEST_STATE_IDLE,
-      TCP_CONGEST_STATE_RECOVERY,
-      TCP_CONGEST_STATE_LOSS_RECOVERY
-     );
-   
-   -- TODO: use preprocessing instead of 14 to be coherent with
-   -- the C code.
-   type Chunk_Desc_Array is array(0 .. 14) of Chunk_Desc;
-   
-   type Tcp_Tx_Buffer is
-      record
-         chunkCount: unsigned;
-         maxChunkCound: unsigned;
-         chunk: Chunk_Desc_Array;
-      end record
-     with Convention => C;
-   
-   type Tcp_Rx_Buffer is
-      record
-         chunkCount: unsigned;
-         maxChunkCound: unsigned;
-         chunk: Chunk_Desc_Array;
-      end record
-     with Convention => C;
-   
-   type Tcp_Timer is
-      record
-         running: Bool;
-         startTime: Systime;
-         interval: Systime;
-      end record
-     with Convention => C;
-   
-   type TcpQueueItem is
-      record
-         length: unsigned;
-      end record
-     with Convention => C;
-   
-   type Tcp_Sack_Block is
-      record
-         leftEdge: unsigned_long;
-         rightEdge: unsigned_long;
-      end record
-     with Convention => C;
+
+   -------------------
+   -- TCP functions --
+   -------------------
+
+   -- Ephemeral ports are used for dynamic port assignment
+   Tcp_Dynamic_Port : Port;
+
+   SOCKET_EPHEMERAL_PORT_MIN: Port := 49152;
+   SOCKET_EPHEMERAL_PORT_MAX: Port := 65535;
+
+   procedure Tcp_Init
+      with
+         Global => (
+            Output => Tcp_Dynamic_Port
+         ),
+         Post => 
+            (Tcp_Dynamic_Port = 0);
+
+   procedure Tcp_Get_Dynamic_Port (
+               P : out Port
+   )
+      with
+         Global => (
+            In_Out => Tcp_Dynamic_Port
+         ),
+         Depends => (
+            P => Tcp_Dynamic_Port
+         ),
+         Post => (
+            P <= SOCKET_EPHEMERAL_PORT_MAX and then
+            P >= SOCKET_EPHEMERAL_PORT_MIN and then
+            Tcp_Dynamic_Port <= SOCKET_EPHEMERAL_PORT_MAX and then
+            Tcp_Dynamic_Port >= SOCKET_EPHEMERAL_PORT_MIN
+         );
+
+   -- procedure Tcp_Connect (
+   --             Sock           :     Socket_Struct;
+   --             Remote_Ip_Addr :     IpAddr;
+   --             Remote_Port    :     Port;
+   --             Error          : out Error_T
+   -- );
+
+   -- procedure Tcp_Listen (
+   --             Sock    :     Socket_Struct;
+   --             Backlog :     unsigned;
+   --             Error   : out Error_T
+   -- );
+
+   procedure Tcp_Get_State (
+               Sock  :     Socket;
+               State : out Tcp_State
+   )
+   with
+      Depends => (State => Sock),
+      Post => State = Sock.State;
 
 end Tcp;

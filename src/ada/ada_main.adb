@@ -9,7 +9,7 @@ with SPARK_Mode
 is
 
     procedure HTTP_Client_Test is
-        Sock : Socket_Struct;
+        Sock : Socket;
         ServerAddr : IpAddr;
         Request : constant char_array := "GET /anything HTTP/1.1\r\nHost: httpbin.org\r\nConnection: close\r\n\r\n";
         Buf : char_array (1 .. 128);

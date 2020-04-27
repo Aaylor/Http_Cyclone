@@ -20,7 +20,7 @@ is
 
 
     procedure Socket_Open (
-        Sock:   out Socket_Struct;
+        Sock:   out Socket;
         S_Type:     Socket_Type; 
         S_Protocol: Socket_Protocol)
     is 
@@ -30,7 +30,7 @@ is
     
 
     procedure Socket_Set_Timeout (
-        Sock :    in out Socket_Struct;
+        Sock :    in out Socket;
         Timeout:  Systime)
     is
         Ret : unsigned;
@@ -39,7 +39,7 @@ is
     end Socket_Set_Timeout;
 
     procedure Socket_Set_Ttl (
-        Sock : in out Socket_Struct;
+        Sock : in out Socket;
         Ttl  :        Ttl_Type
     )
     is
@@ -49,7 +49,7 @@ is
     end Socket_Set_Ttl;
 
     procedure Socket_Set_Multicast_Ttl (
-        Sock : in out Socket_Struct;
+        Sock : in out Socket;
         Ttl  :        Ttl_Type
     )
     is
@@ -59,9 +59,9 @@ is
     end Socket_Set_Multicast_Ttl;
 
     procedure Socket_Connect (
-        Sock: in out Socket_Struct;
+        Sock: in out Socket;
         Remote_Ip_Addr : in IpAddr;
-        Remote_Port : in Sock_Port;
+        Remote_Port : in Port;
         Error : out Error_T)
     is 
     begin
@@ -69,7 +69,7 @@ is
     end Socket_Connect;
 
     procedure Socket_Send (
-        Sock: in Socket_Struct;
+        Sock: in Socket;
         Data: in char_array;
         Error : out Error_T)
     is
@@ -79,7 +79,7 @@ is
     end Socket_Send;
 
     procedure Socket_Receive(
-        Sock: Socket_Struct;
+        Sock: Socket;
         Buf: out char_array;
         Error : out Error_T)
     is
@@ -90,7 +90,7 @@ is
     end Socket_Receive;
 
     procedure Socket_Shutdown (
-        Sock  :     Socket_Struct;
+        Sock  :     Socket;
         How   :     Socket_Shutdown_Flags;
         Error : out Error_T)
     is
@@ -98,14 +98,14 @@ is
         Error := Error_T'Enum_Val(socketShutdown(Sock, Socket_Shutdown_Flags'Enum_Rep(How)));
     end Socket_Shutdown;
 
-    procedure Socket_Close (Sock : in out Socket_Struct)
+    procedure Socket_Close (Sock : in out Socket)
     is
     begin
         socketClose (Sock);
     end Socket_Close;
 
     procedure Socket_Set_Tx_Buffer_Size (
-        Sock : in out Socket_Struct;
+        Sock : in out Socket;
         Size :        Buffer_Size)
     is
         Ret : unsigned;
@@ -114,7 +114,7 @@ is
     end Socket_Set_Tx_Buffer_Size;
 
     procedure Socket_Set_Rx_Buffer_Size (
-        Sock : in out Socket_Struct;
+        Sock : in out Socket;
         Size :        Buffer_Size)
     is
         Ret : unsigned;
@@ -123,9 +123,9 @@ is
     end Socket_Set_Rx_Buffer_Size;
 
     procedure Socket_Bind (
-        Sock          : in out Socket_Struct;
+        Sock          : in out Socket;
         Local_Ip_Addr :        IpAddr;
-        Local_Port    :        Sock_Port) 
+        Local_Port    :        Port) 
     is
         Ret : unsigned;
     begin
@@ -133,7 +133,7 @@ is
     end Socket_Bind;
 
     procedure Socket_Listen (
-        Sock   :     Socket_Struct;
+        Sock   :     Socket;
         Backlog:     Natural;
         Error  : out Error_T)
     is
@@ -142,10 +142,10 @@ is
     end Socket_Listen;
 
     procedure Socket_Accept (
-        Sock           :     Socket_Struct;
+        Sock           :     Socket;
         Client_Ip_Addr : out IpAddr;
-        Client_Port    : out Sock_Port;
-        Client_Socket  : out Socket_Struct)
+        Client_Port    : out Port;
+        Client_Socket  : out Socket)
     is
     begin
         Client_Socket := socketAccept(Sock, Client_Ip_Addr, Client_Port);

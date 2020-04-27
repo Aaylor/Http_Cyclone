@@ -367,6 +367,7 @@ OBJCOPY = $(CROSS_COMPILE)objcopy
 SIZE = $(CROSS_COMPILE)size
 
 THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
+PREP_FILE := src/prep.def
 
 .PHONY: all
 all: build size
@@ -393,7 +394,7 @@ $(OBJ_DIR):
 %.o: %.S $(HEADERS) $(THIS_MAKEFILE)
 	$(CC) $(CFLAGS) -c $< -o $(addprefix $(OBJ_DIR)/, $(notdir $@))
 
-%.o: %.adb $(THIS_MAKEFILE) $()
+%.o: %.adb $(THIS_MAKEFILE)
 	$(ADA_COMPILER) $(ADAFLAGS) -c $< -o $(addprefix $(OBJ_DIR)/, $(notdir $@))
 
 %.lst: %.elf
@@ -404,6 +405,12 @@ $(OBJ_DIR):
 
 %.hex: %.elf
 	$(OBJCOPY) -O ihex $< $@
+
+$(PREP_FILE): src/net_config.h
+	gcc -fpreprocessed -dD -E $< | \
+	sed s/ENABLED/1/ | sed s/DISABLED/0/ | \
+	tail -n +4 | head -n -1 | \
+	awk '/./ {OFS=":="; print $$2,$$3 > "$@"}'
 
 .PHONY: size
 size: $(RESULT).elf
@@ -421,6 +428,7 @@ clean:
 	rm -f $(RESULT).hex
 	rm -f $(RESULT).lst
 	rm -f $(OBJ_DIR)/*.o
+	rm -f src/prep.def
 
 .PHONY: prove
 prove: prove.gpr $(wildcard ./src/ada/*.adb) $(wildcard ./src/ada/*.ads)

@@ -10,7 +10,8 @@ package Ip is
       end record
      with Convention => C;
 
-   subtype IpAddrAny is IpAddr with Predicate => IpAddrAny.length > 0;
+   subtype IpAddrAny is IpAddr 
+      with Predicate => IpAddrAny.length > 0;
 
    IP_ADDR_ANY : aliased constant IpAddrAny
    with
