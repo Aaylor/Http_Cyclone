@@ -186,9 +186,14 @@ is
    SOCKET_FLAG_NO_DELAY   : constant Socket_Flags := 16#4000#;
    SOCKET_FLAG_DELAY      : constant Socket_Flags := 16#8000#;
 
+
    SOCKET_MAX_COUNT : constant Positive := 10;
-   type Socket_Type_Index is range 0 .. (SOCKET_MAX_COUNT - 1);
-   type Socket_Table_T is array (Socket_Type_Index) of aliased Socket_Struct;
+
+   type Socket is range -1 .. (SOCKET_MAX_COUNT - 1); --access Socket_Struct;
+   subtype Not_Null_Socket is Socket range Socket(0) .. Socket(SOCKET_MAX_COUNT - 1); -- not null Socket;
+
+   -- type Socket_Type_Index is range 0 .. (SOCKET_MAX_COUNT - 1);
+   type Socket_Table_T is array (Not_Null_Socket) of aliased Socket_Struct;
 
    Socket_Table : aliased Socket_Table_T
      with
@@ -196,8 +201,6 @@ is
       Convention    => C,
       External_Name => "socketTable";
 
-   type Socket is access Socket_Struct;
-   subtype Not_Null_Socket is not null Socket;
 
    SOCKET_EPHEMERAL_PORT_MIN : constant Port := 49_152;
    SOCKET_EPHEMERAL_PORT_MAX : constant Port := 65_535;
@@ -232,23 +235,40 @@ is
    end record
      with Ghost;
 
+   type Socket_Table_Model_T is array (Not_Null_Socket) of Socket_Model with Ghost;
+
 
    function Model (Sock : Not_Null_Socket) return Socket_Model is
      (Socket_Model'(
-         -- S_Descriptor     => Sock.S_Descriptor,
-         S_Type           => Sock.S_Type,
-         S_Protocol       => Sock.S_Protocol,
-         S_localIpAddr    => Sock.S_localIpAddr,
-         S_Local_Port     => Sock.S_Local_Port,
-         S_remoteIpAddr   => Sock.S_remoteIpAddr,
-         S_Remote_Port    => Sock.S_Remote_Port,
-         -- S_Timeout        => Sock.S_Timeout,
-         -- S_TTL            => Sock.S_TTL,
-         -- S_Multicast_TTL  => Sock.S_Multicast_TTL,
-         S_State          => Sock.State --,
-         -- S_Rx_Buffer_Size => Sock.rxBufferSize,
-         -- S_Tx_Buffer_Size => Sock.txBufferSize
+         -- S_Descriptor     => Socket_Table(Sock).S_Descriptor,
+         S_Type           => Socket_Table(Sock).S_Type,
+         S_Protocol       => Socket_Table(Sock).S_Protocol,
+         S_localIpAddr    => Socket_Table(Sock).S_localIpAddr,
+         S_Local_Port     => Socket_Table(Sock).S_Local_Port,
+         S_remoteIpAddr   => Socket_Table(Sock).S_remoteIpAddr,
+         S_Remote_Port    => Socket_Table(Sock).S_Remote_Port,
+         -- S_Timeout        => Socket_Table(Sock).S_Timeout,
+         -- S_TTL            => Socket_Table(Sock).S_TTL,
+         -- S_Multicast_TTL  => Socket_Table(Sock).S_Multicast_TTL,
+         S_State          => Socket_Table(Sock).State --,
+         -- S_Rx_Buffer_Size => Socket_Table(Sock).rxBufferSize,
+         -- S_Tx_Buffer_Size => Socket_Table(Sock).txBufferSize
      ))
      with Ghost;
+
+
+   -- Won't work if the number of Socket in the table is changed
+   function Model_Socket_Table return Socket_Table_Model_T is
+      (Socket_Table_Model_T'(0 => Model(0),
+          1 => Model(1),
+          2 => Model(2),
+          3 => Model(3),
+          4 => Model(4),
+          5 => Model(5),
+          6 => Model(6),
+          7 => Model(7),
+          8 => Model(8),
+          9 => Model(9)))
+   with Ghost;
 
 end Socket_Types;

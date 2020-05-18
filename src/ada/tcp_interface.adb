@@ -47,7 +47,7 @@ is
    -----------------
 
    procedure Tcp_Connect
-      (Sock           : in out Not_Null_Socket;
+      (Sock           :        Not_Null_Socket;
        Remote_Ip_Addr :        IpAddr;
        Remote_Port    :        Port;
        Error          :    out Error_T)
@@ -56,17 +56,17 @@ is
    begin
 
       -- Check current TCP state
-      if Sock.State = TCP_STATE_CLOSED then
+      if Socket_Table(Sock).State = TCP_STATE_CLOSED then
          -- Save port number and IP address of the remote host
-         Sock.S_remoteIpAddr := Remote_Ip_Addr;
-         Sock.S_Remote_Port  := Remote_Port;
+         Socket_Table(Sock).S_remoteIpAddr := Remote_Ip_Addr;
+         Socket_Table(Sock).S_Remote_Port  := Remote_Port;
 
          -- Select the source address and the relevant network interface
          -- to use when establishing the connection
          Ip_Select_Source_Addr (
-               Net_Interface => Sock.S_Net_Interface,
-               Dest_Addr     => Sock.S_remoteIpAddr,
-               Src_Addr      => Sock.S_localIpAddr,
+               Net_Interface => Socket_Table(Sock).S_Net_Interface,
+               Dest_Addr     => Socket_Table(Sock).S_remoteIpAddr,
+               Src_Addr      => Socket_Table(Sock).S_localIpAddr,
                Error         => Error);
          
          
@@ -75,25 +75,25 @@ is
          end if;
 
          -- Make sure the source address is valid
-         if Ip_Is_Unspecified_Addr(Sock.S_localIpAddr) then
+         if Ip_Is_Unspecified_Addr(Socket_Table(Sock).S_localIpAddr) then
             Error := ERROR_NOT_CONFIGURED;
             return;
          end if;
 
          -- The user owns the socket
-         Sock.owned_Flag := True;
+         Socket_Table(Sock).owned_Flag := True;
 
          -- Number of chunks that comprise the TX and the RX buffers
-         Sock.txBuffer.maxChunkCound := 
-               Sock.txBuffer.chunk'Size / Sock.txBuffer.chunk(0)'Size;
-         Sock.rxBuffer.maxChunkCound :=
-               Sock.rxBuffer.chunk'Size / Sock.rxBuffer.chunk(0)'Size;
+         Socket_Table(Sock).txBuffer.maxChunkCound := 
+               Socket_Table(Sock).txBuffer.chunk'Size / Socket_Table(Sock).txBuffer.chunk(0)'Size;
+         Socket_Table(Sock).rxBuffer.maxChunkCound :=
+               Socket_Table(Sock).rxBuffer.chunk'Size / Socket_Table(Sock).rxBuffer.chunk(0)'Size;
          
          -- Allocate transmit buffer
-         Net_Tx_Buffer_Set_Length (Sock.txBuffer, Sock.txBufferSize, Error);
+         Net_Tx_Buffer_Set_Length (Socket_Table(Sock).txBuffer, Socket_Table(Sock).txBufferSize, Error);
 
          if Error = NO_ERROR then
-            Net_Rx_Buffer_Set_Length (Sock.rxBuffer, Sock.rxBufferSize, Error);
+            Net_Rx_Buffer_Set_Length (Socket_Table(Sock).rxBuffer, Socket_Table(Sock).rxBufferSize, Error);
          end if;
 
          if Error /= NO_ERROR then
@@ -102,41 +102,41 @@ is
          end if;
 
          -- The SMSS is the size of the largest segment that the sender can transmit
-         Sock.smss := unsigned_short'Min (TCP_DEFAULT_MSS, TCP_MAX_MSS);
+         Socket_Table(Sock).smss := unsigned_short'Min (TCP_DEFAULT_MSS, TCP_MAX_MSS);
          -- The RMSS is the size of the largest segment the receiver is willing to accept
-         Sock.rmss := unsigned_short(unsigned_long'Min 
-                                       (unsigned_long(Sock.rxBufferSize), 
+         Socket_Table(Sock).rmss := unsigned_short(unsigned_long'Min 
+                                       (unsigned_long(Socket_Table(Sock).rxBufferSize), 
                                         unsigned_long(TCP_MAX_MSS)));
 
          -- An initial send sequence number is selected
-         Sock.iss := netGetRand;
+         Socket_Table(Sock).iss := netGetRand;
 
          -- Initialize TCP control block
          -- @TODO : Il y aura forcément des overflows ici.
          -- Voir avec Clément.
-         Sock.sndUna := Sock.iss;
-         Sock.sndNxt := Sock.iss + 1;
-         Sock.rcvUser := 0;
-         Sock.rcvWnd := unsigned_short(Sock.rxBufferSize);
+         Socket_Table(Sock).sndUna := Socket_Table(Sock).iss;
+         Socket_Table(Sock).sndNxt := Socket_Table(Sock).iss + 1;
+         Socket_Table(Sock).rcvUser := 0;
+         Socket_Table(Sock).rcvWnd := unsigned_short(Socket_Table(Sock).rxBufferSize);
 
          -- Default retransmission timeout
-         Sock.rto := TCP_INITIAL_RTO;
+         Socket_Table(Sock).rto := TCP_INITIAL_RTO;
          
          -- Default congestion state
-         Sock.congestState := TCP_CONGEST_STATE_IDLE;
+         Socket_Table(Sock).congestState := TCP_CONGEST_STATE_IDLE;
          
          -- @TODO voir pour l'overflow
          -- Initial congestion window
-         Sock.cwnd := unsigned_short(
-                        unsigned_long'Min(unsigned_long(TCP_INITIAL_WINDOW) * unsigned_long(Sock.smss),
-                                          unsigned_long(Sock.txBufferSize)));
+         Socket_Table(Sock).cwnd := unsigned_short(
+                        unsigned_long'Min(unsigned_long(TCP_INITIAL_WINDOW) * unsigned_long(Socket_Table(Sock).smss),
+                                          unsigned_long(Socket_Table(Sock).txBufferSize)));
          -- Slow start threshold should be set arbitrarily high
-         Sock.ssthresh := unsigned_short'Last;
+         Socket_Table(Sock).ssthresh := unsigned_short'Last;
          -- Recover is set to the initial send sequence number
-         Sock.recover := Sock.iss;
+         Socket_Table(Sock).recover := Socket_Table(Sock).iss;
 
          -- Send a SYN segment
-         Tcp_Send_Segment (Sock, TCP_FLAG_SYN, Sock.iss, 0, 0, True, Error);
+         Tcp_Send_Segment (Sock, TCP_FLAG_SYN, Socket_Table(Sock).iss, 0, 0, True, Error);
 
          -- Failed to send TCP segment?
          if Error /= NO_ERROR then
@@ -149,7 +149,7 @@ is
 
       -- Wait for the connection to be established
       Tcp_Wait_For_Events (Sock, SOCKET_EVENT_CONNECTED or SOCKET_EVENT_CLOSED,
-                           Sock.S_Timeout, Event);
+                           Socket_Table(Sock).S_Timeout, Event);
 
       -- Connection successfully established?
       if Event = SOCKET_EVENT_CONNECTED then
@@ -171,22 +171,22 @@ is
    ----------------
 
    procedure Tcp_Listen
-      (Sock    : in out Not_Null_Socket;
-       Backlog :        unsigned)
+      (Sock    : Not_Null_Socket;
+       Backlog : unsigned)
        -- Error   :    out Error_T)
    is
    begin
       -- Socket already connected?
-      -- if Sock.State /= TCP_STATE_CLOSED then
+      -- if Socket_Table(Sock).State /= TCP_STATE_CLOSED then
       --    Error := ERROR_ALREADY_CONNECTED;
       --    return;
       -- end if;
 
       -- Set the size of the SYN queue Limit the number of pending connections
       if Backlog > 0 then
-         Sock.synQueueSize := unsigned'Min (Backlog, TCP_MAX_SYN_QUEUE_SIZE);
+         Socket_Table(Sock).synQueueSize := unsigned'Min (Backlog, TCP_MAX_SYN_QUEUE_SIZE);
       else
-         Sock.synQueueSize :=
+         Socket_Table(Sock).synQueueSize :=
            unsigned'Min (TCP_DEFAULT_SYN_QUEUE_SIZE, TCP_MAX_SYN_QUEUE_SIZE);
       end if;
 
@@ -203,7 +203,7 @@ is
    ----------------
 
    procedure Tcp_Accept
-      (Sock           : in out Not_Null_Socket;
+      (Sock           : in     Not_Null_Socket;
        Client_Ip_Addr :    out IpAddr;
        Client_Port    :    out Port;
        Client_Socket  :    out Socket)
@@ -227,7 +227,7 @@ is
       Client_Ip_Addr := (Ip => (others => 0),
                          Length => 0);
       Client_Port := 0;
-      Client_Socket := null;
+      Client_Socket := -1;
 
       -- Wait for an connection attempt
       loop
@@ -236,11 +236,11 @@ is
             (Model(Sock) = Model(Sock)'Loop_Entry) ;
          
          -- The SYN queue is empty ?
-         if Sock.synQueue = null then
+         if Socket_Table(Sock).synQueue = null then
             -- Set the events the application is interested in
-            Sock.S_Event_Mask := SOCKET_EVENT_RX_READY;
+            Socket_Table(Sock).S_Event_Mask := SOCKET_EVENT_RX_READY;
             -- Reset the event object
-            Os_Reset_Event (Sock.S_Event);
+            Os_Reset_Event (Socket_Table(Sock).S_Event);
 
             -- Release exclusive access
             Os_Release_Mutex (Net_Mutex);
@@ -251,19 +251,12 @@ is
          end if;
 
          -- Check whether the queue is still empty
-         if Sock.synQueue = null then
+         if Socket_Table(Sock).synQueue = null then
             -- Timeout error
-            Client_Socket := null;
+            Client_Socket := -1;
             -- Exit immediately
             exit;
          end if;
-
-         -- Point to the first item in the SYN queue
-         Queue_Item := Sock.synQueue;
-
-         -- Return the client IP address and port number
-         Client_Ip_Addr := Queue_Item.Src_Addr;
-         Client_Port    := Queue_Item.Src_Port;
 
          -- Release exclusive access
          Os_Release_Mutex (Net_Mutex);
@@ -272,81 +265,96 @@ is
          -- Get exclusive access
          Os_Acquire_Mutex (Net_Mutex);
 
+         -- Point to the first item in the SYN queue
+         Queue_Item := Socket_Table(Sock).synQueue;
+
+         -- Return the client IP address and port number
+         Client_Ip_Addr := Queue_Item.Src_Addr;
+         Client_Port    := Queue_Item.Src_Port;
+
          -- Socket successfully created?
-         if Client_Socket /= null then
+         if Client_Socket /= -1 then
             -- The user owns the socket;
-            Client_Socket.owned_Flag := True; 
+            Socket_Table(Client_Socket).owned_Flag := True; 
 
             -- Inherit settings from the listening socket
-            Client_Socket.txBufferSize := Sock.txBufferSize;
-            Client_Socket.rxBufferSize := Sock.rxBufferSize;
+            Socket_Table(Client_Socket).txBufferSize := Socket_Table(Sock).txBufferSize;
+            Socket_Table(Client_Socket).rxBufferSize := Socket_Table(Sock).rxBufferSize;
+
+            -- Number of chunks that comprise the TX and the RX buffers
+            Socket_Table(Client_Socket).txBuffer.maxChunkCound :=
+               Socket_Table(Client_Socket).txBuffer.chunk'Size /
+                  Socket_Table(Client_Socket).txBuffer.chunk(0)'Size;
+            Socket_Table(Client_Socket).rxBuffer.maxChunkCound :=
+               Socket_Table(Client_Socket).rxBuffer.chunk'Size /
+                  Socket_Table(Client_Socket).rxBuffer.chunk(0)'Size;
 
             -- Allocate transmit buffer
             Net_Tx_Buffer_Set_Length 
-                  (Client_Socket.txBuffer,
-                   Client_Socket.txBufferSize,
+                  (Socket_Table(Client_Socket).txBuffer,
+                   Socket_Table(Client_Socket).txBufferSize,
                    Error);
             
             -- Check status code
             if Error = NO_ERROR then
                -- Allocate receive buffer
                Net_Rx_Buffer_Set_Length 
-                  (Client_Socket.rxBuffer,
-                   Client_Socket.rxBufferSize,
+                  (Socket_Table(Client_Socket).rxBuffer,
+                   Socket_Table(Client_Socket).rxBufferSize,
                    Error);
             end if;
 
             -- Transmit and receive buffers successfully allocated?
             if Error = NO_ERROR then
                -- Bind the newly created socket to the appropriate interface
-               Client_Socket.S_Net_Interface := Queue_Item.Net_Interface;
+               Socket_Table(Client_Socket).S_Net_Interface := Queue_Item.Net_Interface;
 
                -- Bind the socket to the specified address
-               Client_Socket.S_localIpAddr := Queue_Item.Dest_Addr;
-               Client_Socket.S_Local_Port := Sock.S_Local_Port;
+               Socket_Table(Client_Socket).S_localIpAddr := Queue_Item.Dest_Addr;
+               Socket_Table(Client_Socket).S_Local_Port := Socket_Table(Sock).S_Local_Port;
                -- Save the port number and the IP address of the remote host
-               Client_Socket.S_remoteIpAddr := Queue_Item.Src_Addr;
-               Client_Socket.S_Remote_Port := Queue_Item.Src_Port;
+               Socket_Table(Client_Socket).S_remoteIpAddr := Queue_Item.Src_Addr;
+               Socket_Table(Client_Socket).S_Remote_Port := Queue_Item.Src_Port;
 
                -- The SMSS is the size of the largest segment that the sender
                -- can transmit
-               Client_Socket.smss := Queue_Item.mss;
+               Socket_Table(Client_Socket).smss := Queue_Item.mss;
 
                -- The RMSS is the size of the largest segment the receiver is
                -- willing to accept
-               Client_Socket.rmss := unsigned_short'Min
-                     (unsigned_short(Client_Socket.rxBufferSize),
+               Socket_Table(Client_Socket).rmss := unsigned_short'Min
+                     (unsigned_short(Socket_Table(Client_Socket).rxBufferSize),
                       TCP_MAX_MSS);
                
                -- Initialize TCP control block
-               Client_Socket.iss     := netGetRand;
-               Client_Socket.irs     := Queue_Item.Isn;
-               Client_Socket.sndUna  := Client_Socket.iss;
-               Client_Socket.sndNxt  := Client_Socket.iss + 1;
-               Client_Socket.rcvNxt  := Client_Socket.irs + 1;
-               Client_Socket.rcvUser := 0;
-               Client_Socket.rcvWnd  := unsigned_short(Client_Socket.rxBufferSize);
+               Socket_Table(Client_Socket).iss     := netGetRand;
+               Socket_Table(Client_Socket).irs     := Queue_Item.Isn;
+               Socket_Table(Client_Socket).sndUna  := Socket_Table(Client_Socket).iss;
+               Socket_Table(Client_Socket).sndNxt  := Socket_Table(Client_Socket).iss + 1;
+               Socket_Table(Client_Socket).rcvNxt  := Socket_Table(Client_Socket).irs + 1;
+               Socket_Table(Client_Socket).rcvUser := 0;
+               Socket_Table(Client_Socket).rcvWnd  := unsigned_short(Socket_Table(Client_Socket).rxBufferSize);
 
                -- Default retransmission timeout
-               Client_Socket.rto := TCP_INITIAL_RTO;
+               Socket_Table(Client_Socket).rto := TCP_INITIAL_RTO;
 
                -- Default congestion state
-               Sock.congestState := TCP_CONGEST_STATE_IDLE;
+               Socket_Table(Sock).congestState := TCP_CONGEST_STATE_IDLE;
                -- Initial congestion window
-               Client_Socket.cwnd := unsigned_short(unsigned_long'Min 
-                        (unsigned_long(TCP_INITIAL_WINDOW * Client_Socket.smss),
-                         unsigned_long(Client_Socket.txBufferSize)));
+               Socket_Table(Client_Socket).cwnd := unsigned_short(unsigned_long'Min 
+                        (unsigned_long(TCP_INITIAL_WINDOW * Socket_Table(Client_Socket).smss),
+                         unsigned_long(Socket_Table(Client_Socket).txBufferSize)));
                -- Slow start threshold should be set arbitrarily high
-               Client_Socket.ssthresh := unsigned_short'Last;
+               Socket_Table(Client_Socket).ssthresh := unsigned_short'Last;
                -- Recover is set to the initial send sequence number
-               Client_Socket.recover := Client_Socket.iss;
+               Socket_Table(Client_Socket).recover := Socket_Table(Client_Socket).iss;
 
                -- Send a SYN ACK control segment
                Tcp_Send_Segment 
                   (Sock         => Client_Socket,
                    Flags        => TCP_FLAG_SYN or TCP_FLAG_ACK,
-                   Seq_Num      => Client_Socket.iss,
-                   Ack_Num      => Client_Socket.rcvNxt,
+                   Seq_Num      => Socket_Table(Client_Socket).iss,
+                   Ack_Num      => Socket_Table(Client_Socket).rcvNxt,
                    Length       => 0,
                    Add_To_Queue => True,
                    Error        => Error);
@@ -354,7 +362,7 @@ is
                -- TCP segment successfully sent?
                if Error = NO_ERROR then
                   -- Remove the item from the SYN queue
-                  Sock.synQueue := Queue_Item.Next;
+                  Socket_Table(Sock).synQueue := Queue_Item.Next;
                   -- Deallocate memory buffer
                   Queue_Item.Next := null;
                   Mem_Pool_Free (Queue_Item);
@@ -374,7 +382,7 @@ is
          end if;
 
          -- Remove the item from the SYN queue
-         Sock.synQueue := Queue_Item.Next;
+         Socket_Table(Sock).synQueue := Queue_Item.Next;
          -- Deallocate memory buffer
          Queue_Item.Next := null;
          Mem_Pool_Free (Queue_Item);
@@ -392,11 +400,11 @@ is
    ---------------
 
    procedure Tcp_Abort
-      (Sock  : in out Not_Null_Socket;
+      (Sock  : in     Not_Null_Socket;
        Error :    out Error_T)
    is
    begin
-      case Sock.State is
+      case Socket_Table(Sock).State is
          -- SYN-RECEIVED, ESTABLISHED, FIN-WAIT-1
          -- FIN-WAIT-2 or CLOSE-WAIT state?
          when TCP_STATE_SYN_RECEIVED
@@ -405,18 +413,18 @@ is
                | TCP_STATE_FIN_WAIT_2
                | TCP_STATE_CLOSE_WAIT =>
             -- Send a reset segment
-            Tcp_Send_Segment (Sock, TCP_FLAG_RST, Sock.sndNxt, 0, 0, False, Error);
+            Tcp_Send_Segment (Sock, TCP_FLAG_RST, Socket_Table(Sock).sndNxt, 0, 0, False, Error);
             -- Enter CLOSED state
             Tcp_Change_State (Sock, TCP_STATE_CLOSED);
             -- Delete TCB
             Tcp_Delete_Control_Block (Sock);
             -- Mark the socket as closed
-            Sock.S_Type := SOCKET_TYPE_UNUSED;
+            Socket_Table(Sock).S_Type := SOCKET_TYPE_UNUSED;
 
          -- TIME-WAIT state?
          when TCP_STATE_TIME_WAIT =>
             -- The user does not own the socket anymore...
-            Sock.owned_Flag := False;
+            Socket_Table(Sock).owned_Flag := False;
             -- TCB will be deleted and socket will be closed
             -- when the 2MSL timer will elapse
             Error := NO_ERROR;
@@ -428,7 +436,7 @@ is
             --Delete TCB
             Tcp_Delete_Control_Block (Sock);
             -- Mark the socket as closed
-            Sock.S_Type := SOCKET_TYPE_UNUSED;
+            Socket_Table(Sock).S_Type := SOCKET_TYPE_UNUSED;
             -- No error to report
             Error := NO_ERROR;
       end case;
@@ -440,29 +448,29 @@ is
    --------------
 
    procedure Tcp_Send
-      (Sock    : in out Not_Null_Socket;
-       Data    :        char_array;
-       Written :    out Integer;
-       Flags   :        unsigned;
-       Error   :    out Error_T)
+      (Sock    :     Not_Null_Socket;
+       Data    :     char_array;
+       Written : out Integer;
+       Flags   :     unsigned;
+       Error   : out Error_T)
    is
       -- Actual number of bytes written Total_Length : Natural := 0; Event :
       -- unsigned; n : unsigned;
    begin
-      -- -- Check whether the socket is in the listening state if Sock.State /=
+      -- -- Check whether the socket is in the listening state if Socket_Table(Sock).State /=
       -- TCP_STATE_LISTEN then
       --     Error := ERROR_NOT_CONNECTED;
       -- end if;
 
       -- -- Send as much as possible loop
       --     -- Wait until there is more room in the send buffer
-      --     Tcp_Wait_For_Events (Sock, SOCKET_EVENT_TX_READY'Enum_Rep, Sock.S_Timeout, Event);
+      --     Tcp_Wait_For_Events (Sock, SOCKET_EVENT_TX_READY'Enum_Rep, Socket_Table(Sock).S_Timeout, Event);
       --     if Event /= SOCKET_EVENT_TX_READY'Enum_Rep then
       --         Error := ERROR_TIMEOUT;
       --     end if;
 
       --     -- Check current TCP state
-      --     case Sock.State is
+      --     case Socket_Table(Sock).State is
       --         when TCP_STATE_ESTABLISHED | TCP_STATE_CLOSE_WAIT =>
       --             -- The send buffer is now available for writing
       --             null;
@@ -475,7 +483,7 @@ is
       --         -- CLOSED state ?
       --         when others =>
       --             -- The connection was reset by remote side?
-      --             if Sock.reset_Flag /= 0 then
+      --             if Socket_Table(Sock).reset_Flag /= 0 then
       --                 Error := ERROR_CONNECTION_RESET;
       --             else
       --                 Error := ERROR_NOT_CONNECTED;
@@ -484,26 +492,26 @@ is
       --     end case;
 
       --     -- Determine the actual number of bytes in the send buffer
-      --     n := Sock.sndUser + Sock.sndNxt - Sock.sndUna;
+      --     n := Socket_Table(Sock).sndUser + Socket_Table(Sock).sndNxt - Socket_Table(Sock).sndUna;
 
    --     -- Exit immediately if the transmission buffer is full (sanity check)
-      --     if n >= Sock.txBufferSize then
+      --     if n >= Socket_Table(Sock).txBufferSize then
       --         Error := ERROR_FAILURE;
       --         return;
       --     end if;
 
       --     -- Number of bytes available for writing
-      --     n := Sock.txBufferSize - n;
+      --     n := Socket_Table(Sock).txBufferSize - n;
       --     -- Calculate the number of bytes to copy at a time
       --     n := unsigned'Min(n, Data'Length - Total_Length);
 
       --     -- Any Data to copy
       --     if n > 0 then
       --         -- Copy user data to send buffer
-   --         Tcp_Write_Tx_Buffer(Sock, Sock.sndNxt + Sock.sndUser, Data, n);
+   --         Tcp_Write_Tx_Buffer(Sock, Socket_Table(Sock).sndNxt + Socket_Table(Sock).sndUser, Data, n);
 
       --         -- Update the number of data buffered but not yet sent
-      --         Sock.sndUser := Sock.sndUser + n;
+      --         Socket_Table(Sock).sndUser := Socket_Table(Sock).sndUser + n;
 
       --     end if;
 
@@ -518,11 +526,11 @@ is
    -----------------
 
    procedure Tcp_Receive
-      (Sock     : in out Not_Null_Socket;
-       Data     :    out char_array;
-       Received :    out unsigned;
-       Flags    :        unsigned;
-       Error    :    out Error_T)
+      (Sock     :     Not_Null_Socket;
+       Data     : out char_array;
+       Received : out unsigned;
+       Flags    :     unsigned;
+       Error    : out Error_T)
    is begin
       Tcp_Binding.Tcp_Receive (Sock, Data, Received, Flags, Error);
    end Tcp_Receive;
@@ -534,25 +542,24 @@ is
 
    procedure Tcp_Kill_Oldest_Connection (Sock : out Socket) is
       Time     : constant Systime := Os_Get_System_Time;
-      Aux_Sock : Socket;
    begin
-      Sock := null;
-      for I in Socket_Table'Range loop
-         Get_Socket_From_Table (I, Aux_Sock);
+      Sock := -1;
+      for Aux_Sock in Socket_Table'Range loop
+         -- Get_Socket_From_Table (I, Aux_Sock);
 
-         if Aux_Sock.S_Type = SOCKET_TYPE_STREAM then
-            if Aux_Sock.State = TCP_STATE_TIME_WAIT then
+         if Socket_Table(Aux_Sock).S_Type = SOCKET_TYPE_STREAM then
+            if Socket_Table(Aux_Sock).State = TCP_STATE_TIME_WAIT then
                -- Keep track of the oldest socket in the TIME-WAIT state
-               if Sock = null then
+               if Sock = -1 then
                   -- Save socket handle
-                  -- Sock := Aux_Sock;
+                  Sock := Aux_Sock;
                   -- It's to prevent SPARK to see that Sock and Aux_Sock
                   -- are aliased
-                  Get_Socket_From_Table (I, Sock);
+                  -- Get_Socket_From_Table (I, Sock);
                end if;
 
-               if (Time - Aux_Sock.timeWaitTimer.startTime) >
-                 (Time - Sock.timeWaitTimer.startTime)
+               if (Time - Socket_Table(Aux_Sock).timeWaitTimer.startTime) >
+                 (Time - Socket_Table(Sock).timeWaitTimer.startTime)
                then
                   Sock := Aux_Sock;
                end if;
@@ -561,13 +568,13 @@ is
       end loop;
 
       -- Any connection in the TIME-WAIT state?
-      if Sock /= null then
+      if Sock /= -1 then
          -- Enter CLOSED state
          Tcp_Change_State (Sock, TCP_STATE_CLOSED);
          -- Delete TCB
          Tcp_Delete_Control_Block (Sock);
          -- Mark the socket as closed
-         Sock.S_Type := SOCKET_TYPE_UNUSED;
+         Socket_Table(Sock).S_Type := SOCKET_TYPE_UNUSED;
       end if;
    end Tcp_Kill_Oldest_Connection;
 
@@ -582,7 +589,7 @@ is
    is
    begin
       Os_Acquire_Mutex (Net_Mutex);
-      State := Sock.State;
+      State := Socket_Table(Sock).State;
       Os_Release_Mutex (Net_Mutex);
    end Tcp_Get_State;
 
@@ -592,9 +599,9 @@ is
    ------------------
 
    procedure Tcp_Shutdown
-      (Sock  : in out Not_Null_Socket;
-       How   :        Socket_Shutdown_Flags;
-       Error :    out Error_T)
+      (Sock  :     Not_Null_Socket;
+       How   :     Socket_Shutdown_Flags;
+       Error : out Error_T)
    is
       Written : Integer;
       Event : Socket_Event;
@@ -604,7 +611,7 @@ is
       -- Disable transmission?
       if How = SOCKET_SD_SEND or How = SOCKET_SD_BOTH then
          -- Check current state
-         case Sock.State is
+         case Socket_Table(Sock).State is
             when TCP_STATE_CLOSED | TCP_STATE_LISTEN =>
                -- The connection does not exist
                Error := ERROR_NOT_CONNECTED;
@@ -621,7 +628,7 @@ is
                Tcp_Wait_For_Events 
                   (Sock       => Sock,
                    Event_Mask => SOCKET_EVENT_TX_DONE,
-                   Timeout    => Sock.S_Timeout,
+                   Timeout    => Socket_Table(Sock).S_Timeout,
                    Event      => Event);
                
                -- Timeout error?
@@ -634,8 +641,8 @@ is
                Tcp_Send_Segment 
                   (Sock         => Sock,
                    Flags        => TCP_FLAG_FIN or TCP_FLAG_ACK,
-                   Seq_Num      => Sock.sndNxt,
-                   Ack_Num      => Sock.rcvNxt,
+                   Seq_Num      => Socket_Table(Sock).sndNxt,
+                   Ack_Num      => Socket_Table(Sock).rcvNxt,
                    Length       => 0, 
                    Add_To_Queue => True,
                    Error        => Error);
@@ -646,7 +653,7 @@ is
                end if;
 
                -- Sequence number expected to be received
-               Sock.sndNxt := Sock.sndNxt + 1;
+               Socket_Table(Sock).sndNxt := Socket_Table(Sock).sndNxt + 1;
                -- Switch to the FIN-WAIT1 state
                Tcp_Change_State (Sock, TCP_STATE_FIN_WAIT_1);
 
@@ -654,7 +661,7 @@ is
                Tcp_Wait_For_Events (
                   Sock       => Sock,
                   Event_Mask => SOCKET_EVENT_TX_SHUTDOWN,
-                  Timeout    => Sock.S_Timeout,
+                  Timeout    => Socket_Table(Sock).S_Timeout,
                   Event      => Event);
                
                -- Timeout interval elapsed?
@@ -675,7 +682,7 @@ is
                Tcp_Wait_For_Events 
                   (Sock       => Sock,
                    Event_Mask => SOCKET_EVENT_TX_DONE,
-                   Timeout    => Sock.S_Timeout,
+                   Timeout    => Socket_Table(Sock).S_Timeout,
                    Event      => Event);
                
                -- Timeout error?
@@ -688,8 +695,8 @@ is
                Tcp_Send_Segment 
                   (Sock         => Sock,
                    Flags        => TCP_FLAG_FIN or TCP_FLAG_ACK,
-                   Seq_Num      => Sock.sndNxt,
-                   Ack_Num      => Sock.rcvNxt,
+                   Seq_Num      => Socket_Table(Sock).sndNxt,
+                   Ack_Num      => Socket_Table(Sock).rcvNxt,
                    Length       => 0, 
                    Add_To_Queue => True,
                    Error        => Error);
@@ -700,7 +707,7 @@ is
                end if;
 
                -- Sequence number expected to be received
-               Sock.sndNxt := Sock.sndNxt + 1;
+               Socket_Table(Sock).sndNxt := Socket_Table(Sock).sndNxt + 1;
                -- Switch to the FIN-WAIT1 state
                Tcp_Change_State (Sock, TCP_STATE_LAST_ACK);
 
@@ -708,7 +715,7 @@ is
                Tcp_Wait_For_Events (
                   Sock       => Sock,
                   Event_Mask => SOCKET_EVENT_TX_SHUTDOWN,
-                  Timeout    => Sock.S_Timeout,
+                  Timeout    => Socket_Table(Sock).S_Timeout,
                   Event      => Event);
                
                -- Timeout interval elapsed?
@@ -724,7 +731,7 @@ is
                Tcp_Wait_For_Events (
                   Sock       => Sock,
                   Event_Mask => SOCKET_EVENT_TX_SHUTDOWN,
-                  Timeout    => Sock.S_Timeout,
+                  Timeout    => Socket_Table(Sock).S_Timeout,
                   Event      => Event);
                -- Timeout interval elapsed?
                if Event /= SOCKET_EVENT_TX_SHUTDOWN then
@@ -745,7 +752,7 @@ is
       if How = SOCKET_SD_RECEIVE or How = SOCKET_SD_BOTH then
 
          -- Check current state
-         case Sock.State is
+         case Socket_Table(Sock).State is
             when TCP_STATE_LISTEN =>
                -- The connection does not exist 
                Error := ERROR_NOT_CONNECTED;
@@ -758,7 +765,7 @@ is
                Tcp_Wait_For_Events (
                   Sock       => Sock,
                   Event_Mask => SOCKET_EVENT_TX_SHUTDOWN,
-                  Timeout    => Sock.S_Timeout,
+                  Timeout    => Socket_Table(Sock).S_Timeout,
                   Event      => Event);
                -- Timeout interval elapsed?
                if Event /= SOCKET_EVENT_TX_SHUTDOWN then

@@ -26,7 +26,7 @@ is
       Protocol : Socket_Protocol := S_Protocol;
    begin
       -- Initialize socket handle
-      Sock := null;
+      Sock := -1;
       Os_Acquire_Mutex (Net_Mutex);
 
       case S_Type is
@@ -55,79 +55,80 @@ is
             if Socket_Table (I).S_Type = SOCKET_TYPE_UNUSED
             then
                -- Save socket handle
-               Get_Socket_From_Table (I, Sock);
+               -- Get_Socket_From_Table (I, Sock);
+               Sock := I;
                -- We are done
                exit;
             end if;
          end loop;
 
-         if Sock = null then
+         if Sock = -1 then
             -- Kill the oldest connection in the TIME-WAIT state whenever the
             -- socket table runs out of space
             Tcp_Kill_Oldest_Connection (Sock);
          end if;
 
          -- Check whether the current entry is free
-         if Sock /= null then
+         if Sock /= -1 then
             -- Reset Socket
             -- Maybe there is a simplest way to perform that in Ada
-            Sock.S_Type                := S_Type;
-            Sock.S_Protocol            := Protocol;
-            Sock.S_Local_Port          := P;
-            Sock.S_Timeout             := Systime'Last;
-            Sock.S_remoteIpAddr.length := 0;
-            Sock.S_localIpAddr.length  := 0;
-            Sock.S_Remote_Port         := 0;
-            Sock.S_Net_Interface       := System.Null_Address;
-            Sock.S_TTL                 := 0;
-            Sock.S_Multicast_TTL       := 0;
-            Sock.S_Errno_Code          := 0;
-            Sock.S_Event_Mask          := 0;
-            Sock.S_Event_Flags         := 0;
-            Sock.userEvent             := System.Null_Address;
-            Sock.State                 := TCP_STATE_CLOSED;
-            Sock.owned_Flag            := False;
-            Sock.closed_Flag           := False;
-            Sock.reset_Flag            := False;
-            Sock.smss                  := 0;
-            Sock.rmss                  := 0;
-            Sock.iss                   := 0;
-            Sock.irs                   := 0;
-            Sock.sndUna                := 0;
-            Sock.sndNxt                := 0;
-            Sock.sndUser               := 0;
-            Sock.sndWnd                := 0;
-            Sock.maxSndWnd             := 0;
-            Sock.sndWl1                := 0;
-            Sock.sndWl2                := 0;
-            Sock.rcvNxt                := 0;
-            Sock.rcvUser               := 0;
-            Sock.rcvWnd                := 0;
-            Sock.rttBusy               := False;
-            Sock.rttSeqNum             := 0;
-            Sock.rettStartTime         := 0;
-            Sock.srtt                  := 0;
-            Sock.rttvar                := 0;
-            Sock.rto                   := 0;
-            Sock.congestState          := TCP_CONGEST_STATE_IDLE;
-            Sock.cwnd                  := 0;
-            Sock.ssthresh              := 0;
-            Sock.dupAckCount           := 0;
-            Sock.n                     := 0;
-            Sock.recover               := 0;
-            Sock.txBuffer.chunkCount   := 0;
-            Sock.txBufferSize          := 2_860;
-            Sock.rxBuffer.chunkCount   := 0;
-            Sock.rxBufferSize          := 2_860;
-            Sock.retransmitQueue       := System.Null_Address;
-            Sock.retransmitCount       := 0;
-            Sock.synQueue              := null; --System.Null_Address;
-            Sock.synQueueSize          := 0;
-            Sock.wndProbeCount         := 0;
-            Sock.wndProbeInterval      := 0;
-            Sock.sackPermitted         := False;
-            Sock.sackBlockCount        := 0;
-            Sock.receiveQueue          := System.Null_Address;
+            Socket_Table(Sock).S_Type                := S_Type;
+            Socket_Table(Sock).S_Protocol            := Protocol;
+            Socket_Table(Sock).S_Local_Port          := P;
+            Socket_Table(Sock).S_Timeout             := Systime'Last;
+            Socket_Table(Sock).S_remoteIpAddr.length := 0;
+            Socket_Table(Sock).S_localIpAddr.length  := 0;
+            Socket_Table(Sock).S_Remote_Port         := 0;
+            Socket_Table(Sock).S_Net_Interface       := System.Null_Address;
+            Socket_Table(Sock).S_TTL                 := 0;
+            Socket_Table(Sock).S_Multicast_TTL       := 0;
+            Socket_Table(Sock).S_Errno_Code          := 0;
+            Socket_Table(Sock).S_Event_Mask          := 0;
+            Socket_Table(Sock).S_Event_Flags         := 0;
+            Socket_Table(Sock).userEvent             := System.Null_Address;
+            Socket_Table(Sock).State                 := TCP_STATE_CLOSED;
+            Socket_Table(Sock).owned_Flag            := False;
+            Socket_Table(Sock).closed_Flag           := False;
+            Socket_Table(Sock).reset_Flag            := False;
+            Socket_Table(Sock).smss                  := 0;
+            Socket_Table(Sock).rmss                  := 0;
+            Socket_Table(Sock).iss                   := 0;
+            Socket_Table(Sock).irs                   := 0;
+            Socket_Table(Sock).sndUna                := 0;
+            Socket_Table(Sock).sndNxt                := 0;
+            Socket_Table(Sock).sndUser               := 0;
+            Socket_Table(Sock).sndWnd                := 0;
+            Socket_Table(Sock).maxSndWnd             := 0;
+            Socket_Table(Sock).sndWl1                := 0;
+            Socket_Table(Sock).sndWl2                := 0;
+            Socket_Table(Sock).rcvNxt                := 0;
+            Socket_Table(Sock).rcvUser               := 0;
+            Socket_Table(Sock).rcvWnd                := 0;
+            Socket_Table(Sock).rttBusy               := False;
+            Socket_Table(Sock).rttSeqNum             := 0;
+            Socket_Table(Sock).rettStartTime         := 0;
+            Socket_Table(Sock).srtt                  := 0;
+            Socket_Table(Sock).rttvar                := 0;
+            Socket_Table(Sock).rto                   := 0;
+            Socket_Table(Sock).congestState          := TCP_CONGEST_STATE_IDLE;
+            Socket_Table(Sock).cwnd                  := 0;
+            Socket_Table(Sock).ssthresh              := 0;
+            Socket_Table(Sock).dupAckCount           := 0;
+            Socket_Table(Sock).n                     := 0;
+            Socket_Table(Sock).recover               := 0;
+            Socket_Table(Sock).txBuffer.chunkCount   := 0;
+            Socket_Table(Sock).txBufferSize          := 2_860;
+            Socket_Table(Sock).rxBuffer.chunkCount   := 0;
+            Socket_Table(Sock).rxBufferSize          := 2_860;
+            Socket_Table(Sock).retransmitQueue       := System.Null_Address;
+            Socket_Table(Sock).retransmitCount       := 0;
+            Socket_Table(Sock).synQueue              := null; --System.Null_Address;
+            Socket_Table(Sock).synQueueSize          := 0;
+            Socket_Table(Sock).wndProbeCount         := 0;
+            Socket_Table(Sock).wndProbeInterval      := 0;
+            Socket_Table(Sock).sackPermitted         := False;
+            Socket_Table(Sock).sackBlockCount        := 0;
+            Socket_Table(Sock).receiveQueue          := System.Null_Address;
          end if;
       end if;
 
@@ -135,58 +136,58 @@ is
    end Socket_Open;
 
    procedure Socket_Set_Timeout
-     (Sock    : in out Not_Null_Socket;
-      Timeout :        Systime)
+     (Sock    : Not_Null_Socket;
+      Timeout : Systime)
    is
    begin
       Os_Acquire_Mutex (Net_Mutex);
-      Sock.S_Timeout := Timeout;
+      Socket_Table(Sock).S_Timeout := Timeout;
       Os_Release_Mutex (Net_Mutex);
    end Socket_Set_Timeout;
 
    procedure Socket_Set_Ttl
-     (Sock : in out Not_Null_Socket;
-      Ttl  :        Ttl_Type)
+     (Sock : Not_Null_Socket;
+      Ttl  : Ttl_Type)
    is
    begin
       Os_Acquire_Mutex (Net_Mutex);
-      Sock.S_TTL := unsigned_char (Ttl);
+      Socket_Table(Sock).S_TTL := unsigned_char (Ttl);
       Os_Release_Mutex (Net_Mutex);
    end Socket_Set_Ttl;
 
    procedure Socket_Set_Multicast_Ttl
-     (Sock : in out Not_Null_Socket;
-      Ttl  :        Ttl_Type)
+     (Sock : Not_Null_Socket;
+      Ttl  : Ttl_Type)
    is
    begin
       Os_Acquire_Mutex (Net_Mutex);
-      Sock.S_Multicast_TTL := unsigned_char (Ttl);
+      Socket_Table(Sock).S_Multicast_TTL := unsigned_char (Ttl);
       Os_Release_Mutex (Net_Mutex);
    end Socket_Set_Multicast_Ttl;
 
    procedure Socket_Connect
-     (Sock           : in out Not_Null_Socket;
+     (Sock           : in     Not_Null_Socket;
       Remote_Ip_Addr : in     IpAddr;
       Remote_Port    : in     Port;
       Error          :    out Error_T)
    is
    begin
       -- Connection oriented socket?
-      if Sock.S_Type = SOCKET_TYPE_STREAM then
+      if Socket_Table(Sock).S_Type = SOCKET_TYPE_STREAM then
          Os_Acquire_Mutex (Net_Mutex);
          -- Establish TCP connection
          Tcp_Connect (Sock, Remote_Ip_Addr, Remote_Port, Error);
          Os_Release_Mutex (Net_Mutex);
 
          -- Connectionless socket?
-      elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
-         Sock.S_remoteIpAddr := Remote_Ip_Addr;
-         Sock.S_Remote_Port  := Remote_Port;
+      elsif Socket_Table(Sock).S_Type = SOCKET_TYPE_DGRAM then
+         Socket_Table(Sock).S_remoteIpAddr := Remote_Ip_Addr;
+         Socket_Table(Sock).S_Remote_Port  := Remote_Port;
          Error               := NO_ERROR;
 
          -- Raw Socket?
-      elsif Sock.S_Type = SOCKET_TYPE_RAW_IP then
-         Sock.S_remoteIpAddr := Remote_Ip_Addr;
+      elsif Socket_Table(Sock).S_Type = SOCKET_TYPE_RAW_IP then
+         Socket_Table(Sock).S_remoteIpAddr := Remote_Ip_Addr;
          Error               := NO_ERROR;
       else
          Error := ERROR_INVALID_SOCKET;
@@ -194,19 +195,19 @@ is
    end Socket_Connect;
 
    procedure Socket_Send_To
-     (Sock         : in out Not_Null_Socket;
-      Dest_Ip_Addr :        IpAddr;
-      Dest_Port    :        Port;
+     (Sock         : in     Not_Null_Socket;
+      Dest_Ip_Addr : in     IpAddr;
+      Dest_Port    : in     Port;
       Data         : in     char_array;
       Written      :    out Integer;
-      Flags        :        Socket_Flags;
+      Flags        : in     Socket_Flags;
       Error        :    out Error_T)
    is
    begin
       Written := 0;
       Os_Acquire_Mutex (Net_Mutex);
         --@TODO : finish
-      if Sock.S_Type = SOCKET_TYPE_STREAM then
+      if Socket_Table(Sock).S_Type = SOCKET_TYPE_STREAM then
          Tcp_Send (Sock, Data, Written, Flags, Error);
       else
          Error := ERROR_INVALID_SOCKET;
@@ -215,16 +216,16 @@ is
    end Socket_Send_To;
 
    procedure Socket_Send
-     (Sock    : in out Not_Null_Socket;
+     (Sock    : in     Not_Null_Socket;
       Data    : in     char_array;
       Written :    out Integer;
-      Flags   :        Socket_Flags;
+      Flags   : in     Socket_Flags;
       Error   :    out Error_T)
    is
    begin
       Written := 0;
       Os_Acquire_Mutex (Net_Mutex);
-      if Sock.S_Type = SOCKET_TYPE_STREAM then
+      if Socket_Table(Sock).S_Type = SOCKET_TYPE_STREAM then
          Tcp_Send (Sock, Data, Written, Flags, Error);
       else
          Error := ERROR_INVALID_SOCKET;
@@ -233,30 +234,30 @@ is
    end Socket_Send;
 
    procedure Socket_Receive_Ex
-     (Sock         : in out Not_Null_Socket;
-      Src_Ip_Addr  :    out IpAddr;
-      Src_Port     :    out Port;
-      Dest_Ip_Addr :    out IpAddr;
-      Data         :    out char_array;
-      Received     :    out unsigned;
-      Flags        :        Socket_Flags;
-      Error        :    out Error_T)
+     (Sock         :     Not_Null_Socket;
+      Src_Ip_Addr  : out IpAddr;
+      Src_Port     : out Port;
+      Dest_Ip_Addr : out IpAddr;
+      Data         : out char_array;
+      Received     : out unsigned;
+      Flags        :     Socket_Flags;
+      Error        : out Error_T)
    is
    begin
 
       Os_Acquire_Mutex (Net_Mutex);
-      if Sock.S_Type = SOCKET_TYPE_STREAM then
+      if Socket_Table(Sock).S_Type = SOCKET_TYPE_STREAM then
          Tcp_Receive (Sock, Data, Received, Flags, Error);
          -- Save the source IP address
-         Src_Ip_Addr  := Sock.S_remoteIpAddr;
+         Src_Ip_Addr  := Socket_Table(Sock).S_remoteIpAddr;
          -- Save the source port number
-         Src_Port     := Sock.S_Remote_Port;
+         Src_Port     := Socket_Table(Sock).S_Remote_Port;
          -- Save the destination IP address
-         Dest_Ip_Addr := Sock.S_localIpAddr;
+         Dest_Ip_Addr := Socket_Table(Sock).S_localIpAddr;
       else
-         Src_Ip_Addr  := Sock.S_remoteIpAddr;
-         Src_Port     := Sock.S_Remote_Port;
-         Dest_Ip_Addr := Sock.S_localIpAddr;
+         Src_Ip_Addr  := Socket_Table(Sock).S_remoteIpAddr;
+         Src_Port     := Socket_Table(Sock).S_Remote_Port;
+         Dest_Ip_Addr := Socket_Table(Sock).S_localIpAddr;
          Error        := ERROR_INVALID_SOCKET;
          Received     := 0;
          Data         := (others => nul);
@@ -265,11 +266,11 @@ is
    end Socket_Receive_Ex;
 
    procedure Socket_Receive
-     (Sock     : in out Not_Null_Socket;
-      Data     :    out char_array;
-      Received :    out unsigned;
-      Flags    :        Socket_Flags;
-      Error    :    out Error_T)
+     (Sock     :     Not_Null_Socket;
+      Data     : out char_array;
+      Received : out unsigned;
+      Flags    :     Socket_Flags;
+      Error    : out Error_T)
    is
       Ignore_Src_Ip, Ignore_Dest_Ip : IpAddr;
       Ignore_Src_Port               : Port;
@@ -280,9 +281,9 @@ is
    end Socket_Receive;
 
    procedure Socket_Shutdown
-     (Sock  : in out Not_Null_Socket;
-      How   :        Socket_Shutdown_Flags;
-      Error :    out Error_T)
+     (Sock  :     Not_Null_Socket;
+      How   :     Socket_Shutdown_Flags;
+      Error : out Error_T)
    is
    begin
       Os_Acquire_Mutex (Net_Mutex);
@@ -290,27 +291,27 @@ is
       Os_Release_Mutex (Net_Mutex);
    end Socket_Shutdown;
 
-   procedure Socket_Close (Sock : in out Not_Null_Socket) is
+   procedure Socket_Close (Sock : Not_Null_Socket) is
       Ignore_Error : Error_T;
    begin
       -- Get exclusive access
       Os_Acquire_Mutex (Net_Mutex);
 
-      if (Sock.S_Type = SOCKET_TYPE_STREAM) then
+      if (Socket_Table(Sock).S_Type = SOCKET_TYPE_STREAM) then
          Tcp_Abort (Sock, Ignore_Error);
-      elsif Sock.S_Type = SOCKET_TYPE_DGRAM
-        or else Sock.S_Type = SOCKET_TYPE_RAW_IP
-        or else Sock.S_Type = SOCKET_TYPE_RAW_ETH
+      elsif Socket_Table(Sock).S_Type = SOCKET_TYPE_DGRAM
+        or else Socket_Table(Sock).S_Type = SOCKET_TYPE_RAW_IP
+        or else Socket_Table(Sock).S_Type = SOCKET_TYPE_RAW_ETH
       then
 
          -- @TODO : Purge the receive queue
 
          -- Mark the socket as closed
-         Sock.S_Type := SOCKET_TYPE_UNUSED;
+         Socket_Table(Sock).S_Type := SOCKET_TYPE_UNUSED;
       else
          -- All others cases that need to be considered to be coherent with the
          -- C code but that won't never appear.
-         Sock.S_Type := SOCKET_TYPE_UNUSED;
+         Socket_Table(Sock).S_Type := SOCKET_TYPE_UNUSED;
       end if;
 
       -- Release exclusive access
@@ -318,34 +319,34 @@ is
    end Socket_Close;
 
    procedure Socket_Set_Tx_Buffer_Size
-     (Sock : in out Not_Null_Socket;
-      Size :        Tx_Buffer_Size)
+     (Sock : Not_Null_Socket;
+      Size : Tx_Buffer_Size)
    is
    begin
-      Sock.txBufferSize := Size;
+      Socket_Table(Sock).txBufferSize := Size;
    end Socket_Set_Tx_Buffer_Size;
 
    procedure Socket_Set_Rx_Buffer_Size
-     (Sock : in out Not_Null_Socket;
-      Size :        Rx_Buffer_Size)
+     (Sock : Not_Null_Socket;
+      Size : Rx_Buffer_Size)
    is
    begin
-      Sock.rxBufferSize := Size;
+      Socket_Table(Sock).rxBufferSize := Size;
    end Socket_Set_Rx_Buffer_Size;
 
    procedure Socket_Bind
-     (Sock          : in out Not_Null_Socket;
-      Local_Ip_Addr :        IpAddr;
-      Local_Port    :        Port)
+     (Sock          : Not_Null_Socket;
+      Local_Ip_Addr : IpAddr;
+      Local_Port    : Port)
    is
    begin
-      Sock.S_localIpAddr := Local_Ip_Addr;
-      Sock.S_Local_Port  := Local_Port;
+      Socket_Table(Sock).S_localIpAddr := Local_Ip_Addr;
+      Socket_Table(Sock).S_Local_Port  := Local_Port;
    end Socket_Bind;
 
    procedure Socket_Listen
-     (Sock    : in out Not_Null_Socket;
-      Backlog :        Natural)
+     (Sock    : Not_Null_Socket;
+      Backlog : Natural)
       -- Error   :    out Error_T)
    is
    begin
@@ -355,10 +356,10 @@ is
    end Socket_Listen;
 
    procedure Socket_Accept
-     (Sock           : in out Not_Null_Socket;
-      Client_Ip_Addr :    out IpAddr;
-      Client_Port    :    out Port;
-      Client_Socket  :    out Socket)
+     (Sock           :     Not_Null_Socket;
+      Client_Ip_Addr : out IpAddr;
+      Client_Port    : out Port;
+      Client_Socket  : out Socket)
    is
    begin
       Tcp_Accept (Sock, Client_Ip_Addr, Client_Port, Client_Socket);

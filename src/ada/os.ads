@@ -35,17 +35,17 @@ is
    -- Doing it so allow to give a contract at the end of the procedure
    -- that resume what have been done on the raw data process side.
    procedure Os_Wait_For_Event
-      (Sock : in out Not_Null_Socket)
+      (Sock : Not_Null_Socket)
    with
-      Global => null,
-      Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
+      Global => (In_Out => Socket_Table),
+      Pre => Socket_Table(Sock).S_Type = SOCKET_TYPE_STREAM,
       Contract_Cases =>
-         (Sock.State = TCP_STATE_LISTEN =>
+         (Socket_Table(Sock).State = TCP_STATE_LISTEN =>
                Model (Sock) = Model (Sock)'Old and then
-               (if Sock.synQueue /= null then
-                  Is_Initialized_Ip (Sock.synQueue.Src_Addr) and then
-                  Sock.synQueue.Src_Port > 0 and then
-                  Is_Initialized_Ip (Sock.synQueue.Dest_Addr)),
+               (if Socket_Table(Sock).synQueue /= null then
+                  Is_Initialized_Ip (Socket_Table(Sock).synQueue.Src_Addr) and then
+                  Socket_Table(Sock).synQueue.Src_Port > 0 and then
+                  Is_Initialized_Ip (Socket_Table(Sock).synQueue.Dest_Addr)),
          others => Model(Sock) = Model(Sock)'Old);
             
 

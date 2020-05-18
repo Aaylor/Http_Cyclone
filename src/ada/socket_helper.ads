@@ -7,14 +7,14 @@ package Socket_Helper
    with SPARK_Mode
 is
 
-   procedure Get_Socket_From_Table
-     (Index : in     Socket_Type_Index;
-      Sock  :    out Socket)
-     with
-      Depends =>
-         (Sock => Index),
-      Post =>
-         Sock /= null;
+   -- procedure Get_Socket_From_Table
+   --   (Index : in     Socket_Type_Index;
+   --    Sock  :    out Socket)
+   --   with
+   --    Depends =>
+   --       (Sock => Index),
+   --    Post =>
+   --       Sock /= null;
 
    procedure Get_Host_By_Name_H
      (Server_Name    :     char_array;

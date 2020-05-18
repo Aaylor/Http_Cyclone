@@ -50,7 +50,7 @@ is
    end Os_Wait_For_Event;
 
    procedure Os_Wait_For_Event 
-      (Sock : in out Not_Null_Socket)
+      (Sock : Not_Null_Socket)
    is
       procedure osWaitForEvent (Event : System.Address; Timeout : Systime)
         with
@@ -58,7 +58,7 @@ is
          Convention    => C,
          External_Name => "osWaitForEvent";
    begin
-      osWaitForEvent (Sock.S_Event'Address, Sock.S_Timeout);
+      osWaitForEvent (Socket_Table(Sock).S_Event'Address, Socket_Table(Sock).S_Timeout);
    end Os_Wait_For_Event;
 
 end Os;

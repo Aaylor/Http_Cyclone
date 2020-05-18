@@ -4,22 +4,22 @@ package body Socket_Helper with
    SPARK_Mode => Off
 is
 
-   procedure Get_Socket_From_Table
-     (Index : in     Socket_Type_Index;
-      Sock  :    out Socket)
-   is
+   -- procedure Get_Socket_From_Table
+   --   (Index : in     Socket_Type_Index;
+   --    Sock  :    out Socket)
+   -- is
 
-      function getSocketFromTable
-        (index : unsigned)
-      return Socket
-        with
-         Import        => True,
-         Convention    => C,
-         External_Name => "getSocketFromTable";
+   --    function getSocketFromTable
+   --      (index : unsigned)
+   --    return Socket
+   --      with
+   --       Import        => True,
+   --       Convention    => C,
+   --       External_Name => "getSocketFromTable";
 
-   begin
-      Sock := getSocketFromTable (unsigned (Index));
-   end Get_Socket_From_Table;
+   -- begin
+   --    Sock := getSocketFromTable (unsigned (Index));
+   -- end Get_Socket_From_Table;
 
    -- Temporaire, à supprimer.
    -- Juste pour faire tourner gnatprove pour le moment
