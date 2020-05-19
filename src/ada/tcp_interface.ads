@@ -182,7 +182,11 @@ is
             (Sock         => Socket_Table,
              Socket_Table =>+ null),
         Post =>
-           (if Sock /= -1 then
+            (for all S in Socket_Table'Range =>
+                (if S /= Sock then 
+                  Model_Socket_Table(S) = 
+                     Model_Socket_Table'Old(S))) and then
+            (if Sock /= -1 then
               Socket_Table(Sock).S_Type = SOCKET_TYPE_UNUSED);
 
     procedure Tcp_Get_State

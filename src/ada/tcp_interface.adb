@@ -258,19 +258,20 @@ is
             exit;
          end if;
 
+         -- Point to the first item in the SYN queue
+         Queue_Item := Socket_Table(Sock).synQueue;
+         Socket_Table(Sock).synQueue := null;
+
+         -- Return the client IP address and port number
+         Client_Ip_Addr := Queue_Item.Src_Addr;
+         Client_Port    := Queue_Item.Src_Port;
+
          -- Release exclusive access
          Os_Release_Mutex (Net_Mutex);
          -- Create a new socket to handle the incoming connection request
          Socket_Open (Client_Socket, SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
          -- Get exclusive access
          Os_Acquire_Mutex (Net_Mutex);
-
-         -- Point to the first item in the SYN queue
-         Queue_Item := Socket_Table(Sock).synQueue;
-
-         -- Return the client IP address and port number
-         Client_Ip_Addr := Queue_Item.Src_Addr;
-         Client_Port    := Queue_Item.Src_Port;
 
          -- Socket successfully created?
          if Client_Socket /= -1 then
