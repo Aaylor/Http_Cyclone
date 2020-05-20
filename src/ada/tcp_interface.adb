@@ -47,10 +47,10 @@ is
    -----------------
 
    procedure Tcp_Connect
-      (Sock           :        Not_Null_Socket;
-       Remote_Ip_Addr :        IpAddr;
-       Remote_Port    :        Port;
-       Error          :    out Error_T)
+      (Sock           :     Not_Null_Socket;
+       Remote_Ip_Addr :     IpAddr;
+       Remote_Port    :     Port;
+       Error          : out Error_T)
    is
       Event : Socket_Event;
    begin
@@ -231,9 +231,6 @@ is
 
       -- Wait for an connection attempt
       loop
-
-         pragma Loop_Invariant 
-            (Model(Sock) = Model(Sock)'Loop_Entry) ;
          
          -- The SYN queue is empty ?
          if Socket_Table(Sock).synQueue = null then
@@ -259,8 +256,9 @@ is
          end if;
 
          -- Point to the first item in the SYN queue
-         Queue_Item := Socket_Table(Sock).synQueue;
-         Socket_Table(Sock).synQueue := null;
+         Get_Syn_Queue (Sock, Queue_Item);
+         -- Queue_Item := Socket_Table(Sock).synQueue;
+         -- Socket_Table(Sock).synQueue := null;
 
          -- Return the client IP address and port number
          Client_Ip_Addr := Queue_Item.Src_Addr;

@@ -49,6 +49,9 @@ is
                -- I don't know what happen if the connexion isn't closed.
                Socket_Table(Sock).State = TCP_STATE_CLOSED,
         Post =>
+            (for all S in Socket_Table'Range =>
+               (if S /= Sock then
+                  Model_Socket_Table(S) = Model_Socket_Table'Old(S))) and then
             (if Error = NO_ERROR then
                -- Socket_Table(Sock).S_Descriptor = Socket_Table(Sock).S_Descriptor'Old and then
                Socket_Table(Sock).S_Type = Socket_Table(Sock).S_Type'Old and then
@@ -158,7 +161,8 @@ is
           ((Socket_Table, Error) => (Socket_Table, Sock, How)),
         Pre => Socket_Table(Sock).S_Type = SOCKET_TYPE_STREAM,
         Post =>
-          Model(Sock) = Model(Sock)'Old;
+          (for all S in Socket_Table'Range =>
+            Model_Socket_Table(S) = Model_Socket_Table'Old(S));
    
     procedure Tcp_Abort
       (Sock  : in     Not_Null_Socket;
@@ -183,8 +187,8 @@ is
              Socket_Table =>+ null),
         Post =>
             (for all S in Socket_Table'Range =>
-                (if S /= Sock then 
-                  Model_Socket_Table(S) = 
+               (if S /= Sock then
+                  Model_Socket_Table(S) =
                      Model_Socket_Table'Old(S))) and then
             (if Sock /= -1 then
               Socket_Table(Sock).S_Type = SOCKET_TYPE_UNUSED);
@@ -199,7 +203,11 @@ is
            null  => Net_Mutex),
         Pre => Socket_Table(Sock).S_Type = SOCKET_TYPE_STREAM,
         Post =>
-          State = Socket_Table(Sock).State and then
-          Model(Sock) = Model(Sock)'Old;
+            (for all S in Socket_Table'Range =>
+               (if S /= Sock then
+                  Model_Socket_Table(S) =
+                     Model_Socket_Table'Old(S))) and then
+            State = Socket_Table(Sock).State and then
+            Model(Sock) = Model(Sock)'Old;
 
 end Tcp_Interface;

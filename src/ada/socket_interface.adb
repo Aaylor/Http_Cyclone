@@ -60,6 +60,10 @@ is
                -- We are done
                exit;
             end if;
+
+            pragma Loop_Invariant
+               (for all J in Socket_Table'First .. I =>
+                  Socket_Table(J).S_Type /= SOCKET_TYPE_UNUSED);
          end loop;
 
          if Sock = -1 then

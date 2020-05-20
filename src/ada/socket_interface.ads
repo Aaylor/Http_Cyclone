@@ -55,8 +55,8 @@ is
             null             => Net_Mutex),
          Post =>
             (for all S in Socket_Table'Range =>
-                (if S /= Sock then 
-                  Model_Socket_Table(S) = 
+               (if S /= Sock then
+                  Model_Socket_Table(S) =
                      Model_Socket_Table'Old(S))) and then
             (if Sock /= -1 then
                Socket_Table(Sock).S_Descriptor >= 0 and then

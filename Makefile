@@ -82,9 +82,6 @@ C_SOURCES = \
 	./src/cyclone_tcp/dhcp/dhcp_client.c \
 	./src/cyclone_tcp/dhcp/dhcp_common.c \
 	./src/cyclone_tcp/dhcp/dhcp_debug.c \
-	./src/cyclone_tcp/ftp/ftp_client.c \
-	./src/cyclone_tcp/ftp/ftp_client_transport.c \
-	./src/cyclone_tcp/ftp/ftp_client_misc.c \
 	./src/third_party/freertos/portable/gcc/arm_cm7/r0p1/port.c \
 	./src/third_party/freertos/croutine.c \
 	./src/third_party/freertos/list.c \

@@ -48,4 +48,11 @@ is
              (System.Null_Address, Server_Name, Server_Ip_Addr, Flags));
    end Get_Host_By_Name_H;
 
+   procedure Get_Syn_Queue 
+      (Sock      :     Socket; 
+       Syn_Queue : out Tcp_Syn_Queue_Item_Acc) is
+   begin
+      Syn_Queue := Socket_Table(Sock).synQueue;
+   end Get_Syn_Queue;
+
 end Socket_Helper;

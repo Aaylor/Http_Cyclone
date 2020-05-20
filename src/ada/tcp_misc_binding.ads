@@ -16,8 +16,13 @@ is
       with
         Global => (In_Out => Socket_Table),
         Depends => (Socket_Table =>+ (Sock, New_State)),
-        Post => Model(Sock) = Model(Sock)'Old'Update
-                              (S_State => New_State);
+        Post => 
+            (for all S in Socket_Table'Range =>
+               (if S /= Sock then 
+                  Model_Socket_Table(S) = 
+                     Model_Socket_Table'Old(S))) and then
+            Model(Sock) = Model(Sock)'Old'Update
+                  (S_State => New_State);
 
    procedure Tcp_Wait_For_Events
       (Sock       : in     Not_Null_Socket;
@@ -30,8 +35,12 @@ is
            (Socket_Table =>+ (Sock, Event_Mask, Timeout),
             Event        => (Event_Mask, Timeout)),
          Pre  => Event_Mask /= 0,
-         Post => Event = 0 or else
-                 ((Event_Mask and Event) /= 0),
+         Post => 
+               (for all S in Socket_Table'Range =>
+                  (if S /= Sock then
+                     Model_Socket_Table(S) = Model_Socket_Table'Old(S))) and then
+               (Event = 0 or else
+                  ((Event_Mask and Event) /= 0)),
          Contract_Cases =>
            (Socket_Table(Sock).State = TCP_STATE_SYN_SENT =>
                (if Event = SOCKET_EVENT_CONNECTED then
@@ -57,7 +66,9 @@ is
    procedure Tcp_Delete_Control_Block
       (Sock : Not_Null_Socket)
       with
-        Post => Model(Sock) = Model(Sock)'Old;
+        Post => 
+          (for all S in Socket_Table'Range =>
+            (Model_Socket_Table(S) = Model_Socket_Table'Old(S)));
 
    procedure Tcp_Send_Segment
       (Sock         :     Not_Null_Socket;
@@ -74,6 +85,10 @@ is
                   (Socket_Table, Sock, Flags, Seq_Num, Ack_Num, Length, Add_To_Queue)
             ),
         Post =>
+            (for all S in Socket_Table'Range =>
+               (if S /= Sock then
+                  Model_Socket_Table(S) =
+                     Model_Socket_Table'Old(S))) and then
             (if Error = NO_ERROR then
                Model (Sock) = Model(Sock)'Old);
 

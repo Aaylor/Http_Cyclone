@@ -2,6 +2,7 @@ with Error_H;      use Error_H;
 with Interfaces.C; use Interfaces.C;
 with Ip;           use Ip;
 with Socket_Types; use Socket_Types;
+with Tcp_Type;     use Tcp_Type;
 
 package Socket_Helper
    with SPARK_Mode
@@ -25,5 +26,13 @@ is
       Post =>
          (if Error = NO_ERROR then
             Is_Initialized_Ip (Server_Ip_Addr));
+
+   procedure Get_Syn_Queue 
+      (Sock      :     Socket;
+       Syn_Queue : out Tcp_Syn_Queue_Item_Acc)
+      with
+         Global => (Input => Socket_Table),
+         Post => Syn_Queue /= null;
+
 
 end Socket_Helper;
